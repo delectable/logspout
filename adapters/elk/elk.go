@@ -50,7 +50,7 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 
 	tmplStr := "LOG ENTRY FROM {{.Timestamp}}"
 
-	os.Println("GOT A LOG ENTRY.")
+	fmt.Println("GOT A LOG ENTRY.")
 
 	tmpl, err := template.New("elk").Parse(tmplStr)
 	if err != nil {
