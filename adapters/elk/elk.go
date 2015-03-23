@@ -1,4 +1,4 @@
-package syslog
+package elk
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	router.AdapterFactories.Register(NewSyslogAdapter, "syslog")
+	router.AdapterFactories.Register(NewElkAdapter, "elk")
 }
 
 func getopt(name, dfault string) string {
@@ -25,7 +25,7 @@ func getopt(name, dfault string) string {
 	return value
 }
 
-func NewSyslogAdapter(route *router.Route) (router.LogAdapter, error) {
+func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("udp"))
 	if !found {
 		return nil, errors.New("unable to find adapter: " + route.Adapter)
@@ -35,16 +35,16 @@ func NewSyslogAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, err
 	}
 
-	format := getopt("SYSLOG_FORMAT", "rfc5424")
-	priority := getopt("SYSLOG_PRIORITY", "{{.Priority}}")
-	hostname := getopt("SYSLOG_HOSTNAME", "{{.Container.Config.Hostname}}")
-	pid := getopt("SYSLOG_PID", "{{.Container.State.Pid}}")
-	tag := getopt("SYSLOG_TAG", "{{.ContainerName}}"+route.Options["append_tag"])
-	structuredData := getopt("SYSLOG_STRUCTURED_DATA", "")
+	format := getopt("ELK_FORMAT", "rfc5424")
+	priority := getopt("ELK_PRIORITY", "{{.Priority}}")
+	hostname := getopt("ELK_HOSTNAME", "{{.Container.Config.Hostname}}")
+	pid := getopt("ELK_PID", "{{.Container.State.Pid}}")
+	tag := getopt("ELK_TAG", "{{.ContainerName}}"+route.Options["append_tag"])
+	structuredData := getopt("ELK_STRUCTURED_DATA", "")
 	if route.Options["structured_data"] != "" {
 		structuredData = route.Options["structured_data"]
 	}
-	data := getopt("SYSLOG_DATA", "{{.Data}}")
+	data := getopt("ELK_DATA", "{{.Data}}")
 
 	var tmplStr string
 	switch format {
@@ -61,22 +61,22 @@ func NewSyslogAdapter(route *router.Route) (router.LogAdapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &SyslogAdapter{
+	return &ElkAdapter{
 		route: route,
 		conn:  conn,
 		tmpl:  tmpl,
 	}, nil
 }
 
-type SyslogAdapter struct {
+type ElkAdapter struct {
 	conn  net.Conn
 	route *router.Route
 	tmpl  *template.Template
 }
 
-func (a *SyslogAdapter) Stream(logstream chan *router.Message) {
+func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		err := a.tmpl.Execute(a.conn, &SyslogMessage{message, a})
+		err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
 		if err != nil {
 			log.Println("syslog:", err)
 			a.route.Close()
@@ -85,12 +85,12 @@ func (a *SyslogAdapter) Stream(logstream chan *router.Message) {
 	}
 }
 
-type SyslogMessage struct {
+type ElkMessage struct {
 	*router.Message
-	adapter *SyslogAdapter
+	adapter *ElkAdapter
 }
 
-func (m *SyslogMessage) Priority() syslog.Priority {
+func (m *ElkMessage) Priority() syslog.Priority {
 	switch m.Message.Source {
 	case "stdout":
 		return syslog.LOG_USER | syslog.LOG_INFO
@@ -101,19 +101,19 @@ func (m *SyslogMessage) Priority() syslog.Priority {
 	}
 }
 
-func (m *SyslogMessage) Hostname() string {
+func (m *ElkMessage) Hostname() string {
 	h, _ := os.Hostname()
 	return h
 }
 
-func (m *SyslogMessage) LocalAddr() string {
+func (m *ElkMessage) LocalAddr() string {
 	return m.adapter.conn.LocalAddr().String()
 }
 
-func (m *SyslogMessage) Timestamp() string {
+func (m *ElkMessage) Timestamp() string {
 	return m.Message.Time.Format(time.RFC3339)
 }
 
-func (m *SyslogMessage) ContainerName() string {
+func (m *ElkMessage) ContainerName() string {
 	return m.Message.Container.Name[1:]
 }
