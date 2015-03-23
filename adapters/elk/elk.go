@@ -50,11 +50,11 @@ func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
 		io.WriteString(a.conn, message.Data)
 		// err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
-		if err != nil {
-			log.Println("syslog:", err)
-			a.route.Close()
-			return
-		}
+		// if err != nil {
+		// 	log.Println("syslog:", err)
+		// 	a.route.Close()
+		// 	return
+		// }
 	}
 }
 
