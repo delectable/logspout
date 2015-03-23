@@ -48,7 +48,9 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	// tmplStr := fmt.Sprintf("<%d> {{.Timestamp}} %s %s %d - [%s] %s",
 	// 	priority, hostname, tag, pid, structuredData, data)
 
-	tmplStr := fmt.Sprintf("LOG ENTRY: %s", data)
+	tmplStr := "LOG ENTRY FROM {{.Timestamp}}"
+
+	os.Println("GOT A LOG ENTRY.")
 
 	tmpl, err := template.New("elk").Parse(tmplStr)
 	if err != nil {
