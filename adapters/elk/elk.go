@@ -2,7 +2,7 @@ package elk
 
 import (
 	"errors"
-	"fmt"
+	// "fmt"
 	"io"
 	// "log/syslog"
 	"net"
@@ -49,7 +49,7 @@ type ElkAdapter struct {
 
 func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		elkMessage = NewElkMessage(message)
+		elkMessage := NewElkMessage(message)
 		io.WriteString(adapter.conn, elkMessage.ToString())
 	}
 }
@@ -73,7 +73,7 @@ func NewElkMessage(routerMessage *router.Message) ElkMessage {
 	return elkMessage
 }
 
-func (elkMessage *ElkMessage) ToString() {
-	return_string, _ = json.Marshal(elkMessage.object)
+func (elkMessage *ElkMessage) ToString() string {
+	return_string, _ := json.Marshal(elkMessage.object)
 	return string(return_string)
 }
