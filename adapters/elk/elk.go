@@ -101,7 +101,7 @@ func (m *ElkMessage) Hostname() string {
 }
 
 func (m *ElkMessage) CleanData() string {
-	return strings.Replace(Data, "\n", " ", -1)
+	return strings.Replace(m.Data, "\n", " ", -1)
 }
 
 func (m *ElkMessage) LocalAddr() string {
