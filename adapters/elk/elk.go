@@ -35,7 +35,6 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, err
 	}
 
-	format := getopt("ELK_FORMAT", "rfc5424")
 	priority := getopt("ELK_PRIORITY", "{{.Priority}}")
 	hostname := getopt("ELK_HOSTNAME", "{{.Container.Config.Hostname}}")
 	pid := getopt("ELK_PID", "{{.Container.State.Pid}}")
@@ -46,17 +45,9 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	}
 	data := getopt("ELK_DATA", "{{.Data}}")
 
-	var tmplStr string
-	switch format {
-	case "rfc5424":
-		tmplStr = fmt.Sprintf("<%d>1 {{.Timestamp}} %s %s %d - [%s] %s\n",
-			priority, hostname, tag, pid, structuredData, data)
-	case "rfc3164":
-		tmplStr = fmt.Sprintf("<%s>{{.Timestamp}} %s %s[%s]: %s\n",
-			priority, hostname, tag, pid, data)
-	default:
-		return nil, errors.New("unsupported syslog format: " + format)
-	}
+	tmplStr = fmt.Sprintf("<%d> {{.Timestamp}} %s %s %d - [%s] %s\n",
+		priority, hostname, tag, pid, structuredData, data)
+
 	tmpl, err := template.New("syslog").Parse(tmplStr)
 	if err != nil {
 		return nil, err
