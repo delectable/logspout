@@ -2,8 +2,8 @@ package elk
 
 import (
 	"errors"
+	"fmt"
 	"io"
-	// "log"
 	"log/syslog"
 	"net"
 	"os"
@@ -46,9 +46,10 @@ type ElkAdapter struct {
 	route *router.Route
 }
 
-func (a *ElkAdapter) Stream(logstream chan *router.Message) {
+func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		io.WriteString(a.conn, message.Data)
+		string = fmt.Sprintf("{entry: {time: %d, message: %s}}", message.Time.Unix, message.Data)
+		io.WriteString(adapter.conn, message.Data)
 		// err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
 		// if err != nil {
 		// 	log.Println("syslog:", err)
@@ -58,43 +59,17 @@ func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	}
 }
 
-type ElkMessage struct {
-	*router.Message
-	adapter *ElkAdapter
-}
+// func (m *ElkMessage) Priority() syslog.Priority {
+// 	switch m.Message.Source {
+// 	case "stdout":
+// 		return syslog.LOG_USER | syslog.LOG_INFO
+// 	case "stderr":
+// 		return syslog.LOG_USER | syslog.LOG_ERR
+// 	default:
+// 		return syslog.LOG_DAEMON | syslog.LOG_INFO
+// 	}
+// }
 
-func (m *ElkMessage) Priority() syslog.Priority {
-	switch m.Message.Source {
-	case "stdout":
-		return syslog.LOG_USER | syslog.LOG_INFO
-	case "stderr":
-		return syslog.LOG_USER | syslog.LOG_ERR
-	default:
-		return syslog.LOG_DAEMON | syslog.LOG_INFO
-	}
-}
-
-func (m *ElkMessage) Hostname() string {
-	h, _ := os.Hostname()
-	return h
-}
-
-func (m *ElkMessage) CleanData() string {
-	return strings.Replace(m.Data, "\n", " ", -1)
-}
-
-func (m ElkMessage) TestStr() string {
-	return "test_string"
-}
-
-func (m *ElkMessage) LocalAddr() string {
-	return m.adapter.conn.LocalAddr().String()
-}
-
-func (m *ElkMessage) Timestamp() string {
-	return m.Message.Time.Format(time.RFC3339)
-}
-
-func (m *ElkMessage) ContainerName() string {
-	return m.Message.Container.Name[1:]
-}
+// func (m *ElkMessage) ContainerName() string {
+// 	return m.Message.Container.Name[1:]
+// }
