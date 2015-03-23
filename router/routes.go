@@ -58,7 +58,6 @@ func (rm *RouteManager) GetAll() ([]*Route, error) {
 }
 
 func (rm *RouteManager) AddFromUri(uri string) error {
-	fmt.Println("GOT A URI ROUTE: " + uri)
 	u, err := url.Parse(uri)
 	if err != nil {
 		return err
@@ -67,8 +66,6 @@ func (rm *RouteManager) AddFromUri(uri string) error {
 		Address: u.Host,
 		Adapter: u.Scheme,
 	}
-	fmt.Println("Address: " + u.Host)
-	fmt.Println("Adapter: " + u.Scheme)
 
 	if u.RawQuery != "" {
 		params, err := url.ParseQuery(u.RawQuery)
