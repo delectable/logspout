@@ -7,7 +7,7 @@ dev:
 	@docker run --rm \
 		-e DEBUG=1 \
 		-v /var/run/docker.sock:/tmp/docker.sock \
-		-v $(PWD):/go/src/github.com/gliderlabs/logspout \
+		-v $(PWD):/go/src/github.com/delectable/logspout \
 		-p 8000:8000 \
 		-e ROUTE_URIS=$(ROUTE) \
 		$(NAME):dev
@@ -21,7 +21,7 @@ release:
 	rm -rf release && mkdir release
 	go get github.com/progrium/gh-release/...
 	cp build/* release
-	gh-release create gliderlabs/$(NAME) $(VERSION) \
+	gh-release create delectable/$(NAME) $(VERSION) \
 		$(shell git rev-parse --abbrev-ref HEAD) $(VERSION)
 
 circleci:

@@ -9,7 +9,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 
-	"github.com/gliderlabs/logspout/router"
+	"github.com/delectable/logspout/router"
 )
 
 var Version string

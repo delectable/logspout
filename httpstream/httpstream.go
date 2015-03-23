@@ -10,7 +10,7 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"github.com/gorilla/mux"
 
-	"github.com/gliderlabs/logspout/router"
+	"github.com/delectable/logspout/router"
 )
 
 func init() {

@@ -1,11 +1,11 @@
-FROM gliderlabs/alpine:3.1
+FROM delectable/alpine:3.1
 ENTRYPOINT ["/bin/logspout"]
 VOLUME /mnt/routes
 EXPOSE 8000
 
-COPY . /go/src/github.com/gliderlabs/logspout
+COPY . /go/src/github.com/delectable/logspout
 RUN apk-install go git mercurial \
-	&& cd /go/src/github.com/gliderlabs/logspout \
+	&& cd /go/src/github.com/delectable/logspout \
 	&& export GOPATH=/go \
 	&& go get \
 	&& go build -ldflags "-X main.Version $(cat VERSION)" -o /bin/logspout \

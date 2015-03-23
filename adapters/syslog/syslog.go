@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gliderlabs/logspout/router"
+	"github.com/delectable/logspout/router"
 )
 
 func init() {
