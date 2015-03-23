@@ -2,7 +2,6 @@ package elk
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"log/syslog"
 	"net"
