@@ -7,6 +7,7 @@ import (
 	"log/syslog"
 	"net"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -50,7 +51,7 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 
 	// fmt.Println("GOT A LOG ENTRY.")
 
-	tmplStr := fmt.Sprintf("CRUNCHY BACON: {{.Timestamp}} %s END", data)
+	tmplStr := fmt.Sprintf("CRUNCHY BACON: {{.Timestamp}} %s END", strings.Replace(data, "\n", " "))
 
 	tmpl, err := template.New("elk").Parse(tmplStr)
 	if err != nil {
