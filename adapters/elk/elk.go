@@ -44,14 +44,13 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	// if route.Options["structured_data"] != "" {
 	// 	structuredData = route.Options["structured_data"]
 	// }
-	data := getopt("ELK_DATA", "{{.Data}}")
 
 	// tmplStr := fmt.Sprintf("CRUNCHY BACON: <%d> {{.Timestamp}} %s %s %d - [%s] %s",
 	// 	priority, hostname, tag, pid, structuredData, data)
 
 	// fmt.Println("GOT A LOG ENTRY.")
 
-	tmplStr := fmt.Sprintf("CRUNCHY BACON: {{.Timestamp}} %s END", strings.Replace(data, "\n", " ", -1))
+	tmplStr := "CRUNCHY BACON: {{.Timestamp}} {{.Data}} END"
 
 	tmpl, err := template.New("elk").Parse(tmplStr)
 	if err != nil {
@@ -72,7 +71,7 @@ type ElkAdapter struct {
 
 func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
+		err := a.tmpl.Execute(a.conn, &ElkMessage{strings.Replace(message, "\n", " ", -1), a})
 		if err != nil {
 			log.Println("syslog:", err)
 			a.route.Close()
