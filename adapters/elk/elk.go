@@ -35,14 +35,14 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, err
 	}
 
-	// priority := getopt("ELK_PRIORITY", "{{.Priority}}")
-	// hostname := getopt("ELK_HOSTNAME", "{{.Container.Config.Hostname}}")
-	// pid := getopt("ELK_PID", "{{.Container.State.Pid}}")
-	// tag := getopt("ELK_TAG", "{{.ContainerName}}"+route.Options["append_tag"])
-	// structuredData := getopt("ELK_STRUCTURED_DATA", "")
-	// if route.Options["structured_data"] != "" {
-	// 	structuredData = route.Options["structured_data"]
-	// }
+	priority := getopt("ELK_PRIORITY", "{{.Priority}}")
+	hostname := getopt("ELK_HOSTNAME", "{{.Container.Config.Hostname}}")
+	pid := getopt("ELK_PID", "{{.Container.State.Pid}}")
+	tag := getopt("ELK_TAG", "{{.ContainerName}}"+route.Options["append_tag"])
+	structuredData := getopt("ELK_STRUCTURED_DATA", "")
+	if route.Options["structured_data"] != "" {
+		structuredData = route.Options["structured_data"]
+	}
 	data := getopt("ELK_DATA", "{{.Data}}")
 
 	tmplStr := fmt.Sprintf("CRUNCHY BACON: <%d> {{.Timestamp}} %s %s %d - [%s] %s",
