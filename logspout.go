@@ -79,6 +79,6 @@ func main() {
 	}
 
 	go pump.Pump()
-	log.Printf("logspout %s serving http on :%s", Version, port)
+	log.Printf("Logspout %s serving http on :%s", Version, port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
