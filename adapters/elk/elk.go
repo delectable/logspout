@@ -3,7 +3,7 @@ package elk
 import (
 	"errors"
 	"io"
-	"log"
+	// "log"
 	"log/syslog"
 	"net"
 	"os"
