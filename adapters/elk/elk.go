@@ -66,8 +66,8 @@ func NewElkMessage(routerMessage *router.Message) ElkMessage {
 	elkMessage := &ElkMessage{
 		routerMessage: routerMessage,
 		object: {
-			Time:    routerMessage.Time.Unix,
-			Message: routerMessage.Data,
+			routerMessage.Time.Unix,
+			routerMessage.Data,
 		},
 	}
 	return elkMessage
