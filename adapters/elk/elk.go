@@ -2,12 +2,12 @@ package elk
 
 import (
 	"errors"
+	"io"
 	"log"
 	"log/syslog"
 	"net"
 	"os"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/delectable/logspout/router"
@@ -35,42 +35,21 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, err
 	}
 
-	// priority := getopt("ELK_PRIORITY", "{{.Priority}}")
-	// hostname := getopt("ELK_HOSTNAME", "{{.Container.Config.Hostname}}")
-	// pid := getopt("ELK_PID", "{{.Container.State.Pid}}")
-	// tag := getopt("ELK_TAG", "{{.ContainerName}}"+route.Options["append_tag"])
-	// structuredData := getopt("ELK_STRUCTURED_DATA", "")
-	// if route.Options["structured_data"] != "" {
-	// 	structuredData = route.Options["structured_data"]
-	// }
-
-	// tmplStr := fmt.Sprintf("CRUNCHY BACON: <%d> {{.Timestamp}} %s %s %d - [%s] %s",
-	// 	priority, hostname, tag, pid, structuredData, data)
-
-	// fmt.Println("GOT A LOG ENTRY.")
-
-	tmplStr := "CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY {{.TestStr}} BACON"
-
-	tmpl, err := template.New("elk").Parse(tmplStr)
-	if err != nil {
-		return nil, err
-	}
 	return &ElkAdapter{
 		route: route,
 		conn:  conn,
-		tmpl:  tmpl,
 	}, nil
 }
 
 type ElkAdapter struct {
 	conn  net.Conn
 	route *router.Route
-	tmpl  *template.Template
 }
 
 func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
+		io.WriteString(message.Data)
+		// err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
 		if err != nil {
 			log.Println("syslog:", err)
 			a.route.Close()
