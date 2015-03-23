@@ -49,7 +49,7 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 
 	// fmt.Println("GOT A LOG ENTRY.")
 
-	tmplStr := "CRUNCHY BACON {{.Timestamp}} END"
+	tmplStr := "CRUNCHY {{.TestStr}} BACON"
 
 	tmpl, err := template.New("elk").Parse(tmplStr)
 	if err != nil {
@@ -102,6 +102,10 @@ func (m *ElkMessage) Hostname() string {
 
 func (m *ElkMessage) CleanData() string {
 	return strings.Replace(m.Data, "\n", " ", -1)
+}
+
+func (m *ElkMessage) TestStr() string {
+	return "test_string"
 }
 
 func (m *ElkMessage) LocalAddr() string {
