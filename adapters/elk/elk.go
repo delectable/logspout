@@ -49,7 +49,7 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 
 	// fmt.Println("GOT A LOG ENTRY.")
 
-	tmplStr := "CRUNCHY {{.TestStr}} BACON"
+	tmplStr := "CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY CRUNCHY {{.TestStr}} BACON"
 
 	tmpl, err := template.New("elk").Parse(tmplStr)
 	if err != nil {
@@ -70,7 +70,7 @@ type ElkAdapter struct {
 
 func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		err := a.tmpl.Execute(os.Stdout, &ElkMessage{message, a})
+		err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
 		if err != nil {
 			log.Println("syslog:", err)
 			a.route.Close()
