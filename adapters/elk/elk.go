@@ -45,7 +45,7 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	}
 	data := getopt("ELK_DATA", "{{.Data}}")
 
-	tmplStr := fmt.Sprintf("<%d> {{.Timestamp}} %s %s %d - [%s] %s\n",
+	tmplStr := fmt.Sprintf("CRUNCHY BACON: <%d> {{.Timestamp}} %s %s %d - [%s] %s\n",
 		priority, hostname, tag, pid, structuredData, data)
 
 	tmpl, err := template.New("syslog").Parse(tmplStr)
