@@ -56,8 +56,8 @@ func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 
 type ElkMessage struct {
 	routerMessage *router.Message
-	object        struct {
-		Time    int    `json: "time"`
+	Object        struct {
+		Time    int64  `json: "time"`
 		Message string `json: "message"`
 	}
 }
@@ -67,10 +67,13 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 		routerMessage: routerMessage,
 	}
 
+	elkMessage.Object.Time = routerMessage.Time.Unix()
+	elkMessage.Object.Message = routerMessage.Data
+
 	return elkMessage
 }
 
 func (elkMessage *ElkMessage) ToString() string {
-	return_string, _ := json.Marshal(elkMessage.object)
+	return_string, _ := json.Marshal(elkMessage.Object)
 	return string(return_string)
 }
