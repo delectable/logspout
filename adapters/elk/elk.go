@@ -6,7 +6,7 @@ import (
 	"io"
 	// "log/syslog"
 	"net"
-	// "os"
+	"os"
 	// "strings"
 	// "time"
 	"encoding/json"
@@ -57,8 +57,9 @@ func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 type ElkMessage struct {
 	routerMessage *router.Message
 	Object        struct {
-		Time    int64  `json: "time"`
-		Message string `json: "message"`
+		Time     int64  `json: "time"`
+		Message  string `json: "message"`
+		Hostname string `json: "hostname"`
 	}
 }
 
@@ -69,6 +70,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 
 	elkMessage.Object.Time = routerMessage.Time.Unix()
 	elkMessage.Object.Message = routerMessage.Data
+	elkMessage.Object.Hostname, _ = os.Hostname()
 
 	return elkMessage
 }
