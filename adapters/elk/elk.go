@@ -62,14 +62,11 @@ type ElkMessage struct {
 	}
 }
 
-func NewElkMessage(routerMessage *router.Message) ElkMessage {
+func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage := &ElkMessage{
 		routerMessage: routerMessage,
-		object: {
-			routerMessage.Time.Unix,
-			routerMessage.Data,
-		},
 	}
+
 	return elkMessage
 }
 
