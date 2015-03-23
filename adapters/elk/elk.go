@@ -70,7 +70,7 @@ type ElkAdapter struct {
 
 func (a *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
+		err := a.tmpl.Execute(os.Stdout, &ElkMessage{message, a})
 		if err != nil {
 			log.Println("syslog:", err)
 			a.route.Close()
