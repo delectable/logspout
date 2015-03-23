@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/syslog"
+	// "log/syslog"
 	"net"
 	"os"
-	"strings"
-	"time"
+	// "strings"
+	// "time"
 
 	"github.com/delectable/logspout/router"
 )
@@ -48,8 +48,8 @@ type ElkAdapter struct {
 
 func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		string = fmt.Sprintf("{entry: {time: %d, message: %s}}", message.Time.Unix, message.Data)
-		io.WriteString(adapter.conn, message.Data)
+		output_string := fmt.Sprintf("{entry: {time: %d, message: %s}}", message.Time.Unix, message.Data)
+		io.WriteString(adapter.conn, output_string)
 		// err := a.tmpl.Execute(a.conn, &ElkMessage{message, a})
 		// if err != nil {
 		// 	log.Println("syslog:", err)
