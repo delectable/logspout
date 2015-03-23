@@ -104,7 +104,7 @@ func (m *ElkMessage) CleanData() string {
 	return strings.Replace(m.Data, "\n", " ", -1)
 }
 
-func (m *ElkMessage) TestStr() string {
+func (m ElkMessage) TestStr() string {
 	return "test_string"
 }
 
