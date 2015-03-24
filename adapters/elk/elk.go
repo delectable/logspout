@@ -71,6 +71,7 @@ type ElkMessage struct {
 		Image    string   `json: "image"`
 		Name     string   `json: "name"`
 		Env      []string `json: "env"`
+		App      string   `json: "app"`
 	}
 }
 
@@ -86,7 +87,14 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
 	elkMessage.Object.Env = routerMessage.Container.Config.Env // WE CAN USE THIS TO SET + GET THE APP NAME
-	elkMessage.Object.Name = routerMessage.Container.Name
+
+	// env_map := make(map[string]string)
+	for _, blob := range routerMessage.Container.Config.Env {
+		split_blob := strings.Split(blob, "=")
+		if split_blob[0] == "MARATHON_APP_ID" {
+			elkMessage.Object.App = split_blob[1]
+		}
+	}
 
 	return elkMessage
 }
