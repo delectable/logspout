@@ -15,8 +15,14 @@ import (
 	"github.com/delectable/logspout/router"
 )
 
+var HOSTNAME string
+
 func init() {
 	router.AdapterFactories.Register(NewElkAdapter, "elk")
+
+	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname") // this should stick around in memory, not run for every log line
+	HOSTNAME = strings.TrimSpace(string(hostname_bytestring))
+
 }
 
 // func getopt(name, dfault string) string {
@@ -32,6 +38,7 @@ func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	if !found {
 		return nil, errors.New("unable to find adapter: " + route.Adapter)
 	}
+
 	conn, err := transport.Dial(route.Address, route.Options)
 	if err != nil {
 		return nil, err
@@ -75,11 +82,10 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Time = routerMessage.Time.Unix()
 	elkMessage.Object.Message = routerMessage.Data
 
-	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname") // this should stick around in memory, not run for every log line
-	elkMessage.Object.Hostname = strings.TrimSpace(string(hostname_bytestring))
+	elkMessage.Object.Hostname = HOSTNAME
 
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
-	elkMessage.Object.Env = routerMessage.Container.Config.Env
+	elkMessage.Object.Env = routerMessage.Container.Config.Env // WE CAN USE THIS TO SET + GET THE APP NAME
 	elkMessage.Object.Name = routerMessage.Container.Name
 
 	return elkMessage
