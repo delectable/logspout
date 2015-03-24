@@ -65,13 +65,11 @@ func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 type ElkMessage struct {
 	routerMessage *router.Message
 	Object        struct {
-		Time     int64    `json: "time"`
-		Message  string   `json: "message"`
-		Hostname string   `json: "hostname"`
-		Image    string   `json: "image"`
-		Name     string   `json: "name"`
-		Env      []string `json: "env"`
-		App      string   `json: "app"`
+		Time     int64  `json: "time"`
+		Message  string `json: "message"`
+		Hostname string `json: "hostname"`
+		Image    string `json: "image"`
+		App      string `json: "app"`
 	}
 }
 
@@ -86,7 +84,6 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Hostname = HOSTNAME
 
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
-	elkMessage.Object.Env = routerMessage.Container.Config.Env // WE CAN USE THIS TO SET + GET THE APP NAME
 
 	env_map := make(map[string]string)
 	for _, blob := range routerMessage.Container.Config.Env {
