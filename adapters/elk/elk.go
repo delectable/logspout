@@ -20,7 +20,7 @@ var HOSTNAME string
 func init() {
 	router.AdapterFactories.Register(NewElkAdapter, "elk")
 
-	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname") // this should stick around in memory, not run for every log line
+	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname")
 	HOSTNAME = strings.TrimSpace(string(hostname_bytestring))
 
 }
@@ -91,7 +91,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 		env_map[split_blob[0]] = split_blob[1]
 	}
 
-	elkMessage.Object.App = env_map["MARATHON_APP_ID"]
+	elkMessage.Object.App = env_map["MARATHON_APP_ID"][1:]
 
 	return elkMessage
 }
