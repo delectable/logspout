@@ -88,13 +88,13 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
 	elkMessage.Object.Env = routerMessage.Container.Config.Env // WE CAN USE THIS TO SET + GET THE APP NAME
 
-	// env_map := make(map[string]string)
+	env_map := make(map[string]string)
 	for _, blob := range routerMessage.Container.Config.Env {
 		split_blob := strings.Split(blob, "=")
-		if split_blob[0] == "MARATHON_APP_ID" {
-			elkMessage.Object.App = split_blob[1]
-		}
+		env_map[split_blob[0]] = split_blob[1]
 	}
+
+	elkMessage.Object.App = env_map["MARATHON_APP_ID"]
 
 	return elkMessage
 }
