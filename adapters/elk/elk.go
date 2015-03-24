@@ -58,12 +58,12 @@ func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 type ElkMessage struct {
 	routerMessage *router.Message
 	Object        struct {
-		Time     int64  `json: "time"`
-		Message  string `json: "message"`
-		Hostname string `json: "hostname"`
-		Image    string `json: "image"`
-		Image2   string `json: "image"`
-		Name     string `json: "name"`
+		Time     int64    `json: "time"`
+		Message  string   `json: "message"`
+		Hostname string   `json: "hostname"`
+		Image    string   `json: "image"`
+		Name     string   `json: "name"`
+		Env      []string `json: "env"`
 	}
 }
 
@@ -79,7 +79,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Hostname = strings.TrimSpace(string(hostname_bytestring))
 
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
-	elkMessage.Object.Image2 = routerMessage.Container.Image
+	elkMessage.Object.Env = routerMessage.Container.Config.Env
 	elkMessage.Object.Name = routerMessage.Container.Name
 
 	return elkMessage
