@@ -4,9 +4,10 @@ import (
 	"errors"
 	// "fmt"
 	"io"
+	"io/ioutil"
 	// "log/syslog"
 	"net"
-	"os"
+	// "os"
 	// "strings"
 	// "time"
 	"encoding/json"
@@ -70,7 +71,9 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 
 	elkMessage.Object.Time = routerMessage.Time.Unix()
 	elkMessage.Object.Message = routerMessage.Data
-	elkMessage.Object.Hostname, _ = os.Hostname()
+
+	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname")
+	elkMessage.Object.Hostname = string(hostname_bytestring)
 
 	return elkMessage
 }
