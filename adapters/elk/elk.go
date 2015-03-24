@@ -61,6 +61,9 @@ type ElkMessage struct {
 		Time     int64  `json: "time"`
 		Message  string `json: "message"`
 		Hostname string `json: "hostname"`
+		Image    string `json: "image"`
+		Image2   string `json: "image"`
+		Name     string `json: "name"`
 	}
 }
 
@@ -74,6 +77,10 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 
 	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname") // this should stick around in memory, not run for every log line
 	elkMessage.Object.Hostname = strings.TrimSpace(string(hostname_bytestring))
+
+	elkMessage.Object.Image = routerMessage.Container.Config.Image
+	elkMessage.Object.Image2 = routerMessage.Container.Image
+	elkMessage.Object.Name = routerMessage.Container.Name
 
 	return elkMessage
 }
