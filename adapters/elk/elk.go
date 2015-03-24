@@ -8,7 +8,7 @@ import (
 	// "log/syslog"
 	"net"
 	// "os"
-	// "strings"
+	"strings"
 	// "time"
 	"encoding/json"
 
@@ -72,8 +72,8 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Time = routerMessage.Time.Unix()
 	elkMessage.Object.Message = routerMessage.Data
 
-	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname")
-	elkMessage.Object.Hostname = string(hostname_bytestring)
+	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname") // this should stick around in memory, not run for every log line
+	elkMessage.Object.Hostname = strings.TrimSpace(string(hostname_bytestring))
 
 	return elkMessage
 }
