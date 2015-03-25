@@ -83,7 +83,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Message = routerMessage.Data
 
 	elkMessage.Object.Hostname = HOSTNAME
-	elkMessage.Object.Hostname = getopt("ENV", "development")
+	elkMessage.Object.Env = getopt("ENV", "development")
 
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
 
