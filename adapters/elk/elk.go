@@ -65,12 +65,12 @@ func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 type ElkMessage struct {
 	routerMessage *router.Message
 	Object        struct {
-		Time     int64  `json: "time"`
-		Message  string `json: "message"`
-		Hostname string `json: "hostname"`
-		Image    string `json: "image"`
-		App      string `json: "app"`
-		Env      string `json: "env"`
+		Time     int64  `json:"time"`
+		Message  string `json:"message"`
+		Hostname string `json:"hostname"`
+		Image    string `json:"image"`
+		App      string `json:"app"`
+		Env      string `json:"env"`
 	}
 }
 
