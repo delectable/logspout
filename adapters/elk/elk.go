@@ -25,13 +25,13 @@ func init() {
 
 }
 
-// func getopt(name, dfault string) string {
-// 	value := os.Getenv(name)
-// 	if value == "" {
-// 		value = dfault
-// 	}
-// 	return value
-// }
+func getopt(name, dfault string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		value = dfault
+	}
+	return value
+}
 
 func NewElkAdapter(route *router.Route) (router.LogAdapter, error) {
 	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("udp"))
@@ -70,6 +70,7 @@ type ElkMessage struct {
 		Hostname string `json: "hostname"`
 		Image    string `json: "image"`
 		App      string `json: "app"`
+		Env      string `json: "env"`
 	}
 }
 
@@ -82,6 +83,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 	elkMessage.Object.Message = routerMessage.Data
 
 	elkMessage.Object.Hostname = HOSTNAME
+	elkMessage.Object.Hostname = getopt("ENV", "development")
 
 	elkMessage.Object.Image = routerMessage.Container.Config.Image
 
@@ -91,7 +93,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 		env_map[split_blob[0]] = split_blob[1]
 	}
 
-	elkMessage.Object.App = env_map["MARATHON_APP_ID"][1:]
+	elkMessage.Object.App = env_map["MARATHON_APP_ID"][1:] // Marathon, for some reason, prepends MARATHON_APP_ID with a '/'
 
 	return elkMessage
 }
