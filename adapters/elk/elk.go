@@ -1,16 +1,14 @@
 package elk
 
 import (
+	"encoding/json"
 	"errors"
-	// "fmt"
 	"io"
 	"io/ioutil"
-	// "log/syslog"
 	"net"
 	"os"
 	"strings"
-	// "time"
-	"encoding/json"
+	"time"
 
 	"github.com/delectable/logspout/router"
 )
@@ -22,7 +20,6 @@ func init() {
 
 	hostname_bytestring, _ := ioutil.ReadFile("/etc/hostname")
 	HOSTNAME = strings.TrimSpace(string(hostname_bytestring))
-
 }
 
 func getopt(name, dfault string) string {
@@ -65,12 +62,12 @@ func (adapter *ElkAdapter) Stream(logstream chan *router.Message) {
 type ElkMessage struct {
 	routerMessage *router.Message
 	Object        struct {
-		Time     int64  `json:"time"`
-		Message  string `json:"message"`
-		Hostname string `json:"hostname"`
-		Image    string `json:"image"`
-		App      string `json:"app"`
-		Env      string `json:"env"`
+		Time     float64 `json:"time"`
+		Message  string  `json:"message"`
+		Hostname string  `json:"hostname"`
+		Image    string  `json:"image"`
+		App      string  `json:"app"`
+		Env      string  `json:"env"`
 	}
 }
 
@@ -79,7 +76,7 @@ func NewElkMessage(routerMessage *router.Message) *ElkMessage {
 		routerMessage: routerMessage,
 	}
 
-	elkMessage.Object.Time = routerMessage.Time.Unix()
+	elkMessage.Object.Time = float64(time.Now().UnixNano()) / 1.0e9
 	elkMessage.Object.Message = routerMessage.Data
 
 	elkMessage.Object.Hostname = HOSTNAME
