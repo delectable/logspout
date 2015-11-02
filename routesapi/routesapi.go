@@ -3,7 +3,6 @@ package routesapi
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -15,7 +14,8 @@ func init() {
 	router.HttpHandlers.Register(RoutesAPI, "routes")
 }
 
-func RoutesAPI(routes *router.RouteManager, pump router.LogRouter) http.Handler {
+func RoutesAPI() http.Handler {
+	routes := router.Routes
 	r := mux.NewRouter()
 
 	r.HandleFunc("/routes/{id}", func(w http.ResponseWriter, req *http.Request) {
@@ -69,13 +69,9 @@ func marshal(obj interface{}) []byte {
 	return bytes
 }
 
-func unmarshal(input io.ReadCloser, obj interface{}) error {
-	body, err := ioutil.ReadAll(input)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(body, obj)
-	if err != nil {
+func unmarshal(input io.Reader, obj interface{}) error {
+	dec := json.NewDecoder(input)
+	if err := dec.Decode(obj); err != nil {
 		return err
 	}
 	return nil

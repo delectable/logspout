@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"code.google.com/p/go.net/websocket"
@@ -17,41 +18,53 @@ func init() {
 	router.HttpHandlers.Register(LogStreamer, "logs")
 }
 
-func LogStreamer(routes *router.RouteManager, pump router.LogRouter) http.Handler {
+func debug(v ...interface{}) {
+	if os.Getenv("DEBUG") != "" {
+		log.Println(v...)
+	}
+}
+
+func LogStreamer() http.Handler {
 	logs := mux.NewRouter()
 	logsHandler := func(w http.ResponseWriter, req *http.Request) {
 		params := mux.Vars(req)
 		route := new(router.Route)
-		switch {
-		case params["predicate"] == "id" && params["value"] != "":
-			route.FilterID = params["value"]
-			if len(route.ID) > 12 {
-				route.FilterID = route.FilterID[:12]
+
+		if params["value"] != "" {
+			switch params["predicate"] {
+			case "id":
+				route.FilterID = params["value"]
+				if len(route.ID) > 12 {
+					route.FilterID = route.FilterID[:12]
+				}
+			case "name":
+				route.FilterName = params["value"]
 			}
-		case params["predicate"] == "name" && params["value"] != "":
-			route.FilterName = params["value"]
 		}
 
-		if route.FilterID != "" && !pump.RoutingFrom(route.FilterID) {
+		if route.FilterID != "" && !router.Routes.RoutingFrom(route.FilterID) {
 			http.NotFound(w, req)
 			return
 		}
 
+		defer debug("http: logs streamer disconnected")
 		logstream := make(chan *router.Message)
 		defer close(logstream)
 
 		var closer <-chan bool
 		if req.Header.Get("Upgrade") == "websocket" {
+			debug("http: logs streamer connected [websocket]")
 			closerBi := make(chan bool)
-			go websocketStreamer(w, req, logstream, closerBi)
+			defer websocketStreamer(w, req, logstream, closerBi)
 			closer = closerBi
 		} else {
-			go httpStreamer(w, req, logstream, route.MultiContainer())
+			debug("http: logs streamer connected [http]")
+			defer httpStreamer(w, req, logstream, route.MultiContainer())
 			closer = w.(http.CloseNotifier).CloseNotify()
 		}
 		route.OverrideCloser(closer)
 
-		pump.Route(route, logstream)
+		router.Routes.Route(route, logstream)
 	}
 	logs.HandleFunc("/logs/{predicate:[a-zA-Z]+}:{value}", logsHandler).Methods("GET")
 	logs.HandleFunc("/logs", logsHandler).Methods("GET")

@@ -2,6 +2,7 @@ package router
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -11,6 +12,23 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 )
+
+func init() {
+	pump := &LogsPump{
+		pumps:  make(map[string]*containerPump),
+		routes: make(map[chan *update]struct{}),
+	}
+	LogRouters.Register(pump, "pump")
+	Jobs.Register(pump, "pump")
+}
+
+func getopt(name, dfault string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		value = dfault
+	}
+	return value
+}
 
 func debug(v ...interface{}) {
 	if os.Getenv("DEBUG") != "" {
@@ -35,6 +53,16 @@ func normalID(id string) string {
 	return id
 }
 
+func ignoreContainer(container *docker.Container) bool {
+	for _, kv := range container.Config.Env {
+		kvp := strings.SplitN(kv, "=", 2)
+		if len(kvp) == 2 && kvp[0] == "LOGSPOUT" && strings.ToLower(kvp[1]) == "ignore" {
+			return true
+		}
+	}
+	return false
+}
+
 type update struct {
 	*docker.APIEvents
 	pump *containerPump
@@ -47,43 +75,58 @@ type LogsPump struct {
 	client *docker.Client
 }
 
-func NewLogsPump(client *docker.Client) *LogsPump {
-	p := &LogsPump{
-		pumps:  make(map[string]*containerPump),
-		routes: make(map[chan *update]struct{}),
-		client: client,
-	}
-	return p
+func (p *LogsPump) Name() string {
+	return "pump"
 }
 
-func (p *LogsPump) Pump() {
+func (p *LogsPump) Setup() error {
+	client, err := docker.NewClient(
+		getopt("DOCKER_HOST", "unix:///var/run/docker.sock"))
+	if err != nil {
+		return err
+	}
+	p.client = client
+	return nil
+}
+
+func (p *LogsPump) Run() error {
 	containers, err := p.client.ListContainers(docker.ListContainersOptions{})
-	assert(err, "pump")
+	if err != nil {
+		return err
+	}
 	for _, listing := range containers {
-		p.monitorLogs(&docker.APIEvents{
+		p.pumpLogs(&docker.APIEvents{
 			ID:     normalID(listing.ID),
-			Status: "create",
+			Status: "start",
 		}, false)
 	}
 	events := make(chan *docker.APIEvents)
-	assert(p.client.AddEventListener(events), "pump")
+	err = p.client.AddEventListener(events)
+	if err != nil {
+		return err
+	}
 	for event := range events {
-		debug("event:", normalID(event.ID), event.Status)
+		debug("pump: event:", normalID(event.ID), event.Status)
 		switch event.Status {
-		case "create":
-			go p.monitorLogs(event, true)
-		case "destroy":
+		case "start", "restart":
+			go p.pumpLogs(event, true)
+		case "die":
 			go p.update(event)
 		}
 	}
-	log.Fatal("docker event stream closed")
+	return errors.New("docker event stream closed")
 }
 
-func (p *LogsPump) monitorLogs(event *docker.APIEvents, backlog bool) {
+func (p *LogsPump) pumpLogs(event *docker.APIEvents, backlog bool) {
 	id := normalID(event.ID)
 	container, err := p.client.InspectContainer(id)
 	assert(err, "pump")
 	if container.Config.Tty {
+		debug("pump:", id, "ignored: tty enabled")
+		return
+	}
+	if ignoreContainer(container) {
+		debug("pump:", id, "ignored: environ ignore")
 		return
 	}
 	var tail string
@@ -98,6 +141,7 @@ func (p *LogsPump) monitorLogs(event *docker.APIEvents, backlog bool) {
 	p.pumps[id] = newContainerPump(container, outrd, errrd)
 	p.mu.Unlock()
 	p.update(event)
+	debug("pump:", id, "started")
 	go func() {
 		err := p.client.Logs(docker.LogsOptions{
 			Container:    id,
@@ -109,7 +153,7 @@ func (p *LogsPump) monitorLogs(event *docker.APIEvents, backlog bool) {
 			Tail:         tail,
 		})
 		if err != nil {
-			debug("pump: end of logs:", id, err)
+			debug("pump:", id, "stopped:", err)
 		}
 		outwr.Close()
 		errwr.Close()
@@ -165,7 +209,7 @@ func (p *LogsPump) Route(route *Route, logstream chan *Message) {
 		select {
 		case event := <-updates:
 			switch event.Status {
-			case "create":
+			case "start", "restart":
 				if route.MatchContainer(
 					normalID(event.pump.container.ID),
 					normalName(event.pump.container.Name)) {
@@ -173,10 +217,10 @@ func (p *LogsPump) Route(route *Route, logstream chan *Message) {
 					event.pump.add(logstream, route)
 					defer event.pump.remove(logstream)
 				}
-			case "destroy":
+			case "die":
 				if strings.HasPrefix(route.FilterID, event.ID) {
 					// If the route is just about a single container,
-					// we can stop routing when it is destroyed.
+					// we can stop routing when it dies.
 					return
 				}
 			}

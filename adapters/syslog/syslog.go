@@ -1,19 +1,24 @@
 package syslog
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
 	"log/syslog"
 	"net"
 	"os"
+	"reflect"
 	"text/template"
 	"time"
 
 	"github.com/delectable/logspout/router"
 )
 
+var hostname string
+
 func init() {
+	hostname, _ = os.Hostname()
 	router.AdapterFactories.Register(NewSyslogAdapter, "syslog")
 }
 
@@ -28,7 +33,7 @@ func getopt(name, dfault string) string {
 func NewSyslogAdapter(route *router.Route) (router.LogAdapter, error) {
 	transport, found := router.AdapterTransports.Lookup(route.AdapterTransport("udp"))
 	if !found {
-		return nil, errors.New("unable to find adapter: " + route.Adapter)
+		return nil, errors.New("bad transport: " + route.Adapter)
 	}
 	conn, err := transport.Dial(route.Address, route.Options)
 	if err != nil {
@@ -49,7 +54,7 @@ func NewSyslogAdapter(route *router.Route) (router.LogAdapter, error) {
 	var tmplStr string
 	switch format {
 	case "rfc5424":
-		tmplStr = fmt.Sprintf("<%d>1 {{.Timestamp}} %s %s %d - [%s] %s\n",
+		tmplStr = fmt.Sprintf("<%s>1 {{.Timestamp}} %s %s %s - [%s] %s\n",
 			priority, hostname, tag, pid, structuredData, data)
 	case "rfc3164":
 		tmplStr = fmt.Sprintf("<%s>{{.Timestamp}} %s %s[%s]: %s\n",
@@ -76,18 +81,33 @@ type SyslogAdapter struct {
 
 func (a *SyslogAdapter) Stream(logstream chan *router.Message) {
 	for message := range logstream {
-		err := a.tmpl.Execute(a.conn, &SyslogMessage{message, a})
+		m := &SyslogMessage{message}
+		buf, err := m.Render(a.tmpl)
 		if err != nil {
 			log.Println("syslog:", err)
-			a.route.Close()
 			return
+		}
+		_, err = a.conn.Write(buf)
+		if err != nil {
+			log.Println("syslog:", err)
+			if reflect.TypeOf(a.conn).String() != "*net.UDPConn" {
+				return
+			}
 		}
 	}
 }
 
 type SyslogMessage struct {
 	*router.Message
-	adapter *SyslogAdapter
+}
+
+func (m *SyslogMessage) Render(tmpl *template.Template) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := tmpl.Execute(buf, m)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (m *SyslogMessage) Priority() syslog.Priority {
@@ -102,12 +122,7 @@ func (m *SyslogMessage) Priority() syslog.Priority {
 }
 
 func (m *SyslogMessage) Hostname() string {
-	h, _ := os.Hostname()
-	return h
-}
-
-func (m *SyslogMessage) LocalAddr() string {
-	return m.adapter.conn.LocalAddr().String()
+	return hostname
 }
 
 func (m *SyslogMessage) Timestamp() string {

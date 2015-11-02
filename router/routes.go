@@ -14,15 +14,18 @@ import (
 	"time"
 )
 
+var Routes *RouteManager
+
+func init() {
+	Routes = &RouteManager{routes: make(map[string]*Route)}
+	Jobs.Register(Routes, "routes")
+}
+
 type RouteManager struct {
 	sync.Mutex
 	persistor RouteStore
-	attacher  LogRouter
 	routes    map[string]*Route
-}
-
-func NewRouteManager(router LogRouter) *RouteManager {
-	return &RouteManager{attacher: router, routes: make(map[string]*Route)}
+	routing   bool
 }
 
 func (rm *RouteManager) Load(persistor RouteStore) error {
@@ -57,14 +60,30 @@ func (rm *RouteManager) GetAll() ([]*Route, error) {
 	return routes, nil
 }
 
+func (rm *RouteManager) Remove(id string) bool {
+	rm.Lock()
+	defer rm.Unlock()
+	route, ok := rm.routes[id]
+	if ok && route.closer != nil {
+		route.closer <- true
+	}
+	delete(rm.routes, id)
+	if rm.persistor != nil {
+		rm.persistor.Remove(id)
+	}
+	return ok
+}
+
 func (rm *RouteManager) AddFromUri(uri string) error {
-	u, err := url.Parse(uri)
+	expandedRoute := os.ExpandEnv(uri)
+	u, err := url.Parse(expandedRoute)
 	if err != nil {
 		return err
 	}
 	r := &Route{
 		Address: u.Host,
 		Adapter: u.Scheme,
+		Options: make(map[string]string),
 	}
 
 	if u.RawQuery != "" {
@@ -92,9 +111,9 @@ func (rm *RouteManager) AddFromUri(uri string) error {
 func (rm *RouteManager) Add(route *Route) error {
 	rm.Lock()
 	defer rm.Unlock()
-	factory, found := AdapterFactories.Lookup(route.Adapter)
+	factory, found := AdapterFactories.Lookup(route.AdapterType())
 	if !found {
-		return errors.New("unable to find adapter: " + route.Adapter)
+		return errors.New("bad adapter: " + route.Adapter)
 	}
 	adapter, err := factory(route)
 	if err != nil {
@@ -106,31 +125,75 @@ func (rm *RouteManager) Add(route *Route) error {
 		route.ID = fmt.Sprintf("%x", h.Sum(nil))[:12]
 	}
 	route.closer = make(chan bool)
+	route.adapter = adapter
 	rm.routes[route.ID] = route
-	go func() {
-		logstream := make(chan *Message)
-		defer close(logstream)
-		go adapter.Stream(logstream)
-		rm.attacher.Route(route, logstream)
-	}()
 	if rm.persistor != nil {
 		if err := rm.persistor.Add(route); err != nil {
 			log.Println("persistor:", err)
 		}
 	}
+	if rm.routing {
+		go rm.route(route)
+	}
 	return nil
 }
 
-func (rm *RouteManager) Remove(id string) bool {
+func (rm *RouteManager) route(route *Route) {
+	logstream := make(chan *Message)
+	defer route.Close()
+	rm.Route(route, logstream)
+	route.adapter.Stream(logstream)
+}
+
+func (rm *RouteManager) Route(route *Route, logstream chan *Message) {
+	for _, router := range LogRouters.All() {
+		go router.Route(route, logstream)
+	}
+}
+
+func (rm *RouteManager) RoutingFrom(containerID string) bool {
+	for _, router := range LogRouters.All() {
+		if router.RoutingFrom(containerID) {
+			return true
+		}
+	}
+	return false
+}
+
+func (rm *RouteManager) Run() error {
 	rm.Lock()
-	defer rm.Unlock()
-	route, ok := rm.routes[id]
-	if ok && route.closer != nil {
-		route.closer <- true
+	for _, route := range rm.routes {
+		go rm.route(route)
 	}
-	delete(rm.routes, id)
-	if rm.persistor != nil {
-		rm.persistor.Remove(id)
+	rm.routing = true
+	rm.Unlock()
+	select {}
+}
+
+func (rm *RouteManager) Name() string {
+	return ""
+}
+
+func (rm *RouteManager) Setup() error {
+	var uris string
+	if os.Getenv("ROUTE_URIS") != "" {
+		uris = os.Getenv("ROUTE_URIS")
 	}
-	return ok
+	if len(os.Args) > 1 {
+		uris = os.Args[1]
+	}
+	if uris != "" {
+		for _, uri := range strings.Split(uris, ",") {
+			err := rm.AddFromUri(uri)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	persistPath := getopt("ROUTESPATH", "/mnt/routes")
+	if _, err := os.Stat(persistPath); err == nil {
+		return rm.Load(RouteFileStore(persistPath))
+	}
+	return nil
 }
